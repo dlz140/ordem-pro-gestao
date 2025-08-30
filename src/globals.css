@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Adicione esta nova cor à sua lista de variáveis do shadcn/ui.
+       Esta cor é um rosa/magenta vibrante, bem no estilo cyberpunk.
+       Para alterar a cor 'cyber' em todo o site, basta mudar este valor. */
+    --cyber: 325 100% 45%;
+    --cyber-foreground: 210 40% 98%; /* Um branco quase puro para texto */
+  }
+
+  /* Opcional: para o modo escuro, você pode definir uma variação */
+  .dark {
+    --cyber: 325 100% 55%;
+    --cyber-foreground: 210 40% 98%;
+  }
+}
+
+@layer components {
+  /* ======================================================================
+     Classes Utilitárias Reutilizáveis
+     Aqui centralizamos os padrões de design do seu app.
+     ====================================================================== */
+
+  /* Estilo de Card com efeito de vidro (Glassmorphism) */
+  .card-glass {
+    @apply bg-card/60 backdrop-blur-sm border border-primary/20;
+  }
+  
+  /* Variação para Dialogs, com mais opacidade e blur */
+  .dialog-glass {
+    @apply bg-card/85 backdrop-blur-md border border-primary/20 shadow-2xl;
+  }
+
+  /* Estilo para textos com gradiente */
+  .text-gradient-brand {
+    @apply bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent;
+  }
+
+  /* Estilo para o botão principal com gradiente e sombra customizada */
+  .btn-gradient-cyber {
+    @apply bg-gradient-to-r from-primary to-cyber text-primary-foreground 
+           shadow-lg shadow-cyber
+           transition-all duration-300 ease-in-out
+           hover:shadow-none hover:from-primary/90 hover:to-cyber/90;
+  }
+
+ /* Correção para cor do placeholder no shadcn/ui Select */
+[data-placeholder] {
+  color: hsl(var(--foreground) / 0.6) !important;
+ }
+
+}
