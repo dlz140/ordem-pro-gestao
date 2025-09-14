@@ -1,55 +1,284 @@
+/* Sistema de Design Otimizado - Ordem Pro Gestão */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Adicione esta nova cor à sua lista de variáveis do shadcn/ui.
-       Esta cor é um rosa/magenta vibrante, bem no estilo cyberpunk.
-       Para alterar a cor 'cyber' em todo o site, basta mudar este valor. */
+    /* Light mode - Sistema de cores otimizado */
+    --background: 240 10% 98%;
+    --foreground: 240 10% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 15%;
+    --primary: 214 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 214 32% 91%;
+    --secondary-foreground: 214 100% 15%;
+    --muted: 214 32% 95%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 214 32% 95%;
+    --accent-foreground: 214 100% 15%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 214 100% 50%;
+    --radius: 0.75rem;
+    
+    /* Cores customizadas */
     --cyber: 325 100% 45%;
-    --cyber-foreground: 210 40% 98%; /* Um branco quase puro para texto */
+    --cyber-foreground: 210 40% 98%;
+    
+    /* Sidebar */
+    --sidebar-background: 240 21% 15%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 214 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 15% 25%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 240 15% 20%;
+    --sidebar-ring: 214 100% 50%;
   }
 
-  /* Opcional: para o modo escuro, você pode definir uma variação */
   .dark {
+    /* Dark mode - Sistema de cores otimizado */
+    --background: 240 21% 8%;
+    --foreground: 0 0% 95%;
+    --card: 240 21% 12%;
+    --card-foreground: 0 0% 95%;
+    --popover: 240 21% 12%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 214 100% 60%;
+    --primary-foreground: 240 21% 8%;
+    --secondary: 240 15% 18%;
+    --secondary-foreground: 0 0% 95%;
+    --muted: 240 15% 18%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 15% 18%;
+    --accent-foreground: 0 0% 95%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 240 15% 20%;
+    --input: 240 15% 20%;
+    --ring: 214 100% 60%;
+    
+    /* Cores customizadas */
     --cyber: 325 100% 55%;
     --cyber-foreground: 210 40% 98%;
+    
+    /* Sidebar dark */
+    --sidebar-background: 240 25% 6%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 214 100% 60%;
+    --sidebar-primary-foreground: 240 25% 6%;
+    --sidebar-accent: 240 20% 12%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 240 20% 10%;
+    --sidebar-ring: 214 100% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  /* Scrollbar otimizada */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted/50;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary/70 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary;
+  }
+
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.7) hsl(var(--muted) / 0.5);
   }
 }
 
 @layer components {
   /* ======================================================================
-     Classes Utilitárias Reutilizáveis
-     Aqui centralizamos os padrões de design do seu app.
+     Classes Utilitárias Reutilizáveis Otimizadas
      ====================================================================== */
 
-  /* Estilo de Card com efeito de vidro (Glassmorphism) */
+  /* Glassmorphism para Cards */
   .card-glass {
-    @apply bg-card/60 backdrop-blur-sm border border-primary/20;
+    @apply bg-card/60 backdrop-blur-sm border border-primary/20 shadow-lg;
   }
   
-  /* Variação para Dialogs, com mais opacidade e blur */
+  /* Glassmorphism para Dialogs */
   .dialog-glass {
     @apply bg-card/85 backdrop-blur-md border border-primary/20 shadow-2xl;
   }
 
-  /* Estilo para textos com gradiente */
+  /* Texto com gradiente da marca */
   .text-gradient-brand {
-    @apply bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent font-bold;
   }
 
-  /* Estilo para o botão principal com gradiente e sombra customizada */
+  /* Botão principal com gradiente */
   .btn-gradient-cyber {
     @apply bg-gradient-to-r from-primary to-cyber text-primary-foreground 
-           shadow-lg shadow-cyber
+           shadow-lg shadow-cyber/30 border-0
            transition-all duration-300 ease-in-out
-           hover:shadow-none hover:from-primary/90 hover:to-cyber/90;
+           hover:shadow-lg hover:shadow-primary/30 hover:from-primary/90 hover:to-cyber/90
+           focus-visible:ring-2 focus-visible:ring-primary;
   }
 
- /* Correção para cor do placeholder no shadcn/ui Select */
-[data-placeholder] {
-  color: hsl(var(--foreground) / 0.6) !important;
- }
+  /* Efeito hover para cards */
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-1;
+  }
 
+  /* Estados de foco melhorados */
+  .focus-brand {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
+  }
+
+  /* Botões padronizados */
+  .btn-gradient-outline {
+    @apply border-2 border-primary/30 text-muted-foreground bg-background/50
+           hover:text-foreground hover:bg-gradient-to-r hover:from-purple-900/50 hover:to-slate-900/50 
+           hover:border-purple-800/50 transform hover:-translate-y-1 transition-all duration-300;
+  }
+
+  /* Input padronizado com foco */
+  .input-standard {
+    @apply border-2 border-border bg-background px-3 py-2 rounded-md
+           transition-all duration-200 hover:border-primary/50
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary 
+           focus-visible:ring-offset-2 focus-visible:border-primary
+           shadow-sm hover:shadow-md focus-visible:shadow-lg;
+  }
+
+  /* Card com interação padronizada */
+  .card-interactive {
+    @apply card-glass hover:border-primary/50 transition-all duration-200 
+           transform hover:-translate-y-1 cursor-pointer;
+  }
+
+  /* Layout responsivo de grid */
+  .grid-responsive-2 {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+  }
+
+  .grid-responsive-3 {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
+  }
+
+  .grid-responsive-4 {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4;
+  }
+
+  /* Status badges */
+  .badge-success {
+    @apply bg-green-500/20 text-green-300 border border-green-500/30 px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-warning {
+    @apply bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-error {
+    @apply bg-red-500/20 text-red-300 border border-red-500/30 px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-info {
+    @apply bg-blue-500/20 text-blue-300 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-default {
+    @apply bg-slate-500/20 text-slate-300 border border-slate-500/30 px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  /* Loading states */
+  .loading-spinner {
+    @apply w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin;
+  }
+
+  .loading-container {
+    @apply flex items-center justify-center h-64;
+  }
+
+  /* Table padronizada */
+  .table-standard {
+    @apply table-fixed w-full;
+  }
+
+  .table-header-standard {
+    @apply border-border/50 bg-muted/30;
+  }
+
+  .table-row-standard {
+    @apply hover:bg-accent/50;
+  }
+
+  .table-cell-standard {
+    @apply py-3 px-4;
+  }
+}
+
+  /* Placeholder otimizado para selects */
+  [data-placeholder] {
+    color: hsl(var(--foreground) / 0.6) !important;
+  }
+
+  /* Autofill otimizado para inputs */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0px 1000px hsl(var(--background)) inset !important;
+    -webkit-text-fill-color: hsl(var(--foreground)) !important;
+  }
+
+/* Media Queries Otimizadas */
+@media print {
+  /* Otimização para impressão */
+  body * {
+    visibility: hidden;
+  }
+  
+  #printable-area, #printable-area * {
+    visibility: visible;
+  }
+  
+  #printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+  }
+
+  .no-print {
+    display: none;
+  }
+
+  /* Remove sombras e efeitos visuais na impressão */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
 }

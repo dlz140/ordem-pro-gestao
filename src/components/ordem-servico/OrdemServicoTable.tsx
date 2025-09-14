@@ -1,37 +1,31 @@
 import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2, DollarSign } from "lucide-react";
-import { OrdemServicoDB, StatusOs } from "@/types";
 import { cn } from "@/lib/utils";
 
-<<<<<<< HEAD
-interface OrdemServico {
+type OrdemComJoins = {
   id: string;
-  dataOS: string;
-  nomeCliente: string;
+  data_os: string;
+  nome_cliente: string;
   telefone: string;
   equipamento: string;
-  marca: string;
-  modelo: string;
-  defeito: string;
-  servico: string;
-  produtos: string;
-  valorTotal: number;
-  valorPago: number;
-  valorRestante: number;
-  statusOS: string;
-  formaPagamento: string;
-  observacoes: string;
-  dataEntrega?: string;
-}
-=======
-type OrdemComJoins = Omit<OrdemServicoDB, 'status_os' | 'clientes' | 'equipamentos'> & {
-  clientes: { nome: string } | null;
-  status_os: StatusOs | null;
-  equipamentos: { tipo: string } | null;
+  marca: string | null;
+  modelo: string | null;
+  defeito: string | null;
+  valor_total: number;
+  valor_pago: number;
+  valor_restante: number;
+  status_os: string;
+  forma_pagamento: string | null;
+  observacoes: string | null;
+  data_entrega: string | null;
+  servico: string | null;
+  produtos: string | null;
+  created_at: string;
+  updated_at: string;
 };
->>>>>>> 544b8c8 (mensagem do commit)
 
 interface OrdemServicoTableProps {
   ordens: OrdemComJoins[];
@@ -62,15 +56,15 @@ const colorPalette = [
 ];
 
 const getColorClasses = (colorName?: string | null) => {
-    const color = colorPalette.find(c => c.name === colorName);
-    if (!color) {
-      return `bg-transparent text-gray-400 border-gray-500/30`;
-    }
-    return `bg-transparent ${color.textColor} ${color.borderColor}`;
+  const color = colorPalette.find(c => c.name === colorName);
+  if (!color) {
+    return `bg-transparent text-gray-400 border-gray-500/30`;
+  }
+  return `bg-transparent ${color.textColor} ${color.borderColor}`;
 };
 
 const TableHeaderCell = ({ children, className }: { children: React.ReactNode, className?: string }) => (
-    <TableHead className={`border-r border-border/50 last:border-r-0 ${className}`}>{children}</TableHead>
+  <TableHead className={`border-r border-border/50 last:border-r-0 ${className}`}>{children}</TableHead>
 );
 
 export function OrdemServicoTable({ ordens, onView, onDelete, onDarBaixa }: OrdemServicoTableProps) {
@@ -94,18 +88,18 @@ export function OrdemServicoTable({ ordens, onView, onDelete, onDarBaixa }: Orde
           const saldo = ordem.valor_restante || 0;
           return (
             <TableRow key={ordem.id} className="hover:bg-accent/50">
-              <TableCell className="py-3 px-4 font-semibold text-center">#{ordem.os_number}</TableCell>
+              <TableCell className="py-3 px-4 font-semibold text-center">#{ordem.id.slice(-6)}</TableCell>
               <TableCell 
                 className="py-3 px-4 truncate" 
-                title={ordem.clientes?.nome || "Cliente não informado"}
+                title={ordem.nome_cliente || "Cliente não informado"}
               >
-                {ordem.clientes?.nome || "N/A"}
+                {ordem.nome_cliente || "N/A"}
               </TableCell>
-              <TableCell className="py-3 px-4 text-center">{ordem.equipamentos?.tipo || "N/A"}</TableCell>
+              <TableCell className="py-3 px-4 text-center">{ordem.equipamento || "N/A"}</TableCell>
               <TableCell className="py-3 px-4 text-center">{new Date(ordem.data_os).toLocaleDateString("pt-BR", { timeZone: 'UTC' })}</TableCell>
               <TableCell className="py-3 px-4 text-center">
-                <Badge className={cn("justify-center min-w-[10rem]", getColorClasses(ordem.status_os?.cor))}>
-                  {ordem.status_os?.status || 'Indefinido'}
+                <Badge className={cn("justify-center min-w-[10rem]", getColorClasses('slate'))}>
+                  {ordem.status_os || 'Indefinido'}
                 </Badge>
               </TableCell>
               <TableCell className="py-3 px-4 font-medium text-blue-400 text-right">
@@ -131,7 +125,7 @@ export function OrdemServicoTable({ ordens, onView, onDelete, onDarBaixa }: Orde
                 </div>
               </TableCell>
             </TableRow>
-          )
+          );
         })}
       </TableBody>
     </Table>

@@ -1,25 +1,47 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
+import { Home, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 const NotFound = () => {
   const location = useLocation();
 
   useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
+    // Log 404 error for debugging purposes
+    console.warn(`404 - Página não encontrada: ${location.pathname}`);
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">404</h1>
-        <p className="text-xl text-gray-600 mb-4">Oops! Page not found</p>
-        <a href="/" className="text-blue-500 hover:text-blue-700 underline">
-          Return to Home
-        </a>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="card-glass max-w-md w-full">
+        <CardContent className="p-8 text-center space-y-6">
+          <div className="w-20 h-20 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
+            <AlertTriangle className="w-10 h-10 text-destructive" />
+          </div>
+          
+          <div className="space-y-2">
+            <h1 className="text-6xl font-bold text-destructive">404</h1>
+            <h2 className="text-2xl font-semibold text-foreground">Página Não Encontrada</h2>
+            <p className="text-muted-foreground">
+              A página que você está procurando não existe ou foi movida.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <Link to="/">
+              <Button className="w-full btn-gradient-cyber">
+                <Home className="w-4 h-4 mr-2" />
+                Voltar ao Início
+              </Button>
+            </Link>
+            
+            <p className="text-xs text-muted-foreground">
+              Caminho: <code className="bg-muted px-1 py-0.5 rounded text-xs">{location.pathname}</code>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

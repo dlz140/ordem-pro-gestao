@@ -2,15 +2,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, Filter } from "lucide-react";
-import { StatusOs } from "@/types"; // Importando o tipo de Status
+import { StatusOs } from "@/types";
 
-// Interface de props atualizada para receber a lista de status
 interface OrdemServicoFiltersProps {
   busca: string;
-  setBusca: (busca: string) => void;
+  setBusca: (value: string) => void;
   filtroStatus: string;
   setFiltroStatus: (status: string) => void;
-  statusOptions: StatusOs[]; // <-- NOVO: Prop para as opções de status
+  statusOptions: StatusOs[];
 }
 
 export function OrdemServicoFilters({
@@ -18,7 +17,7 @@ export function OrdemServicoFilters({
   setBusca,
   filtroStatus,
   setFiltroStatus,
-  statusOptions // <-- NOVO: Recebendo a prop
+  statusOptions
 }: OrdemServicoFiltersProps) {
   return (
     <Card className="card-glass">
@@ -42,7 +41,6 @@ export function OrdemServicoFilters({
                 <SelectValue placeholder="Filtrar por status" />
               </SelectTrigger>
               <SelectContent>
-                {/* As opções de status agora são geradas dinamicamente */}
                 <SelectItem value="todos">Todos os status</SelectItem>
                 {statusOptions.map(status => (
                   <SelectItem key={status.id} value={status.status}>{status.status}</SelectItem>

@@ -11,12 +11,13 @@ import { Landmark, Plus, Search, Edit, Trash2, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
-import { DatePicker } from "@/components/ui/DatePicker";
-import { CurrencyInput } from "@/components/ui/CurrencyInput";
+import { DatePicker } from "@/components/ui/date-picker";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Gasto } from "@/types";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useDebounce } from "@/hooks/useDebounce";
 
 type GastoComTipo = Gasto & { tipo: 'ESSENCIAL' | 'INVESTIMENTO' | 'NAO_ESSENCIAL' };
 
@@ -57,9 +58,11 @@ export default function Gastos() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [gastoSelecionado, setGastoSelecionado] = useState<GastoComTipo | null>(null);
   const [novoGasto, setNovoGasto] = useState<Partial<GastoComTipo>>({});
-  const [busca, setBusca] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [gastoParaExcluir, setGastoParaExcluir] = useState<GastoComTipo | null>(null);
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const isFormValid = useMemo(() => {
     return (
@@ -93,9 +96,11 @@ export default function Gastos() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gastos'] });
       toast({ title: "Sucesso!", description: "Gasto removido com sucesso." });
+      setIsConfirmOpen(false);
     },
     onError: (error) => {
       toast({ title: "Erro ao remover", description: error.message, variant: "destructive" });
+      setIsConfirmOpen(false);
     },
   });
 
@@ -137,9 +142,11 @@ export default function Gastos() {
   };
 
   const gastosFiltrados = useMemo(() =>
-    (gastos || []).filter(g =>
-      busca.trim() === "" || g.descricao.toLowerCase().includes(busca.toLowerCase()) || (g.categoria_nome && g.categoria_nome.toLowerCase().includes(busca.toLowerCase()))
-    ), [gastos, busca]);
+    (gastos || []).filter(g => {
+      const buscaLower = debouncedSearchTerm.toLowerCase().trim();
+      if (buscaLower === "") return true;
+      return g.descricao.toLowerCase().includes(buscaLower) || (g.categoria_nome && g.categoria_nome.toLowerCase().includes(buscaLower));
+    }), [gastos, debouncedSearchTerm]);
     
   const totalGastos = useMemo(() => gastosFiltrados.reduce((acc, g) => acc + g.valor, 0), [gastosFiltrados]);
 
@@ -158,73 +165,93 @@ export default function Gastos() {
   }
 
   return (
-    <div className="flex flex-col h-full gap-6">
-      <PageHeader
-        title="Controle de Gastos"
-        subtitle="Gerencie suas despesas"
-        icon={Landmark}
-      >
-        <Button
-          onClick={handleNovoGasto}
-          className="text-base border-primary/30 text-muted-foreground hover:text-foreground hover:bg-gradient-to-r hover:from-purple-900/50 hover:to-slate-900/50 hover:border-purple-800/50 transform hover:-translate-y-1 transition-all duration-300 group"
-          variant="outline"
+    <div className="flex flex-col gap-6">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-6 space-y-6">
+        <PageHeader
+          title="Controle de Gastos"
+          subtitle="Gerencie suas despesas"
+          icon={Landmark}
         >
-          <Plus className="h-4 w-4 mr-2 transition-transform group-hover:rotate-90" />
-          Novo Gasto
-        </Button>
-      </PageHeader>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="card-glass">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-red-400">{totalGastos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</div>
-            <div className="text-sm text-muted-foreground">Total de Gastos (Filtrado)</div>
-          </CardContent>
-        </Card>
-        <Card className="card-glass">
-          <CardContent className="p-4 flex items-center">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input placeholder="Buscar por descrição ou categoria..." value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-10" />
-            </div>
-          </CardContent>
-        </Card>
+          <Button
+            onClick={handleNovoGasto}
+            className="text-base border-primary/30 text-muted-foreground hover:text-foreground hover:bg-gradient-to-r hover:from-purple-900/50 hover:to-slate-900/50 hover:border-purple-800/50 transform hover:-translate-y-1 transition-all duration-300 group"
+            variant="outline"
+          >
+            <Plus className="h-4 w-4 mr-2 transition-transform group-hover:rotate-90" />
+            Novo Gasto
+          </Button>
+        </PageHeader>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="card-glass">
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-red-400">{totalGastos.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</div>
+              <div className="text-sm text-muted-foreground">Total de Gastos (Filtrado)</div>
+            </CardContent>
+          </Card>
+          <Card className="card-glass">
+            <CardContent className="p-4 flex items-center">
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input placeholder="Buscar por descrição ou categoria..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <Card className="card-glass flex-grow flex flex-col">
         <CardContent className="p-0 flex-grow">
           <div className="overflow-y-auto h-full">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border/50 bg-muted/30">
-                  <TableHead className="w-32">Data</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead className="w-48">Categoria</TableHead>
-                  <TableHead className="w-48 text-center">Tipo</TableHead>
-                  <TableHead className="w-40 text-right">Valor</TableHead>
-                  <TableHead className="w-32 text-center">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {gastosFiltrados.map((gasto) => (
-                  <TableRow key={gasto.id} className="hover:bg-accent/50">
-                    <TableCell>{new Date(gasto.data).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</TableCell>
-                    <TableCell className="font-medium truncate" title={gasto.descricao}>{gasto.descricao}</TableCell>
-                    <TableCell className="text-muted-foreground">{gasto.categoria_nome}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge className={cn("min-w-[10rem] justify-center", getTipoBadgeColor(gasto.tipo))}>{gasto.tipo.replace('_', ' ')}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-semibold text-red-400">{gasto.valor.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2 justify-center">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handleEditarGasto(gasto)}><Edit className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleAbrirConfirmacaoExclusao(gasto)}><Trash2 className="h-4 w-4" /></Button>
-                      </div>
-                    </TableCell>
+            {gastosFiltrados.length > 0 ? (
+              <Table>
+                <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
+                  <TableRow className="border-border/50">
+                    <TableHead className="w-32">Data</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead className="w-48">Categoria</TableHead>
+                    <TableHead className="w-48 text-center">Tipo</TableHead>
+                    <TableHead className="w-40 text-right">Valor</TableHead>
+                    <TableHead className="w-32 text-center">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {gastosFiltrados.map((gasto) => (
+                    <TableRow key={gasto.id} className="hover:bg-accent/50">
+                      <TableCell>{new Date(gasto.data).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</TableCell>
+                      <TableCell className="font-medium truncate" title={gasto.descricao}>{gasto.descricao}</TableCell>
+                      <TableCell className="text-muted-foreground">{gasto.categoria_nome}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge className={cn("min-w-[10rem] justify-center", getTipoBadgeColor(gasto.tipo))}>{gasto.tipo.replace('_', ' ')}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold text-red-400">{gasto.valor.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-2 justify-center">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handleEditarGasto(gasto)}><Edit className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleAbrirConfirmacaoExclusao(gasto)}><Trash2 className="h-4 w-4" /></Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
+                <Landmark className="h-16 w-16 text-muted-foreground/50" />
+                <h3 className="text-xl font-semibold text-foreground">
+                  Nenhum Gasto Registrado
+                </h3>
+                <p className="text-muted-foreground">
+                  {searchTerm ? "Nenhum resultado encontrado para sua busca." : "Clique em 'Novo Gasto' para adicionar sua primeira despesa."}
+                </p>
+                <Button
+                  onClick={handleNovoGasto}
+                  className="bg-gradient-to-r from-purple-700 to-purple-900 text-white transform hover:-translate-y-1 transition-all duration-300 font-semibold rounded-lg flex items-center gap-2 px-4 py-2"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Novo Gasto
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -243,12 +270,12 @@ export default function Gastos() {
                 </div>
               </CardContent>
           </Card>
-          <div className="flex-grow space-y-4 px-6 pt-4 pb-6 max-h-[70vh] overflow-y-auto">
+          <div className="flex-grow space-y-3 px-6 pt-4 pb-6 overflow-y-auto">
             <div className="space-y-2">
               <Label>Descrição <span className="text-red-500">*</span></Label>
               <Input placeholder="Ex: Compra de SSD 1TB" value={novoGasto.descricao || ""} onChange={(e) => setNovoGasto({...novoGasto, descricao: e.target.value})} />
             </div>
-            <fieldset disabled={!novoGasto.descricao || novoGasto.descricao.trim() === ''} className="space-y-4 disabled:opacity-50">
+            <fieldset disabled={!novoGasto.descricao || novoGasto.descricao.trim() === ''} className="space-y-3 disabled:opacity-50">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Valor <span className="text-red-500">*</span></Label>
@@ -279,7 +306,7 @@ export default function Gastos() {
             </fieldset>
           </div>
           <DialogFooter className="p-4 border-t border-border/50 bg-muted/50 flex justify-end gap-x-4">
-            <Button variant="outline" onClick={resetDialog} className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 transition-colors duration-300">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 transition-colors duration-300">
               Cancelar
             </Button>
             <Button onClick={handleSalvarGasto} disabled={!isFormValid || saveMutation.isPending} className="bg-gradient-to-r from-purple-700 to-purple-900 text-white transform hover:-translate-y-1 transition-all duration-300 font-semibold rounded-lg flex items-center gap-2 px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed">

@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
@@ -13,50 +12,12 @@ import { Badge } from "@/components/ui/badge";
 import { Package, Plus, Search, Edit, Trash2, Save } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
-import { CurrencyInput } from "@/components/ui/CurrencyInput";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Produto, Marca } from "@/types";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { cn } from "@/lib/utils";
-
-const fetchProdutos = async (): Promise<Produto[]> => {
-  const { data, error } = await supabase
-    .from('produtos')
-    .select(`*, marcas ( marca )`)
-    .order('created_at', { ascending: false });
-  if (error) throw new Error(error.message);
-  return (data as Produto[]) || [];
-};
-
-const fetchMarcas = async (): Promise<Marca[]> => {
-  const { data, error } = await supabase.from('marcas').select('*').order('marca', { ascending: true });
-  if (error) throw new Error(error.message);
-  return data || [];
-};
-
-const saveProduto = async (produtoData: Partial<Produto>): Promise<Produto> => {
-  const { id, marcas, ...updateData } = produtoData;
-  const dadosParaBanco = {
-    produto: updateData.produto,
-    valor: updateData.valor || 0,
-    novo: updateData.novo || false,
-    usado: updateData.usado || false,
-    marca_id: updateData.marca_id || null,
-  };
-
-  let response;
-  if (id) {
-    response = await supabase.from('produtos').update(dadosParaBanco).eq('id', id).select().single();
-  } else {
-    response = await supabase.from('produtos').insert([dadosParaBanco]).select().single();
-  }
-  if (response.error) throw new Error(response.error.message);
-  return response.data;
-};
-
-const deleteProduto = async (id: string): Promise<void> => {
-  const { error } = await supabase.from('produtos').delete().eq('id', id);
-  if (error) throw new Error(error.message);
-};
+import { fetchProdutos, saveProduto, deleteProduto } from "@/services/produtoService";
+import { fetchMarcas } from "@/services/marcaService";
 
 export default function Produtos() {
   const { toast } = useToast();
@@ -84,11 +45,13 @@ export default function Produtos() {
   const { data: produtos, isLoading: isLoadingProdutos } = useQuery<Produto[]>({
     queryKey: ['produtos'],
     queryFn: fetchProdutos,
+    staleTime: 1000 * 60 * 5,
   });
 
   const { data: marcas, isLoading: isLoadingMarcas } = useQuery<Marca[]>({
     queryKey: ['marcas'],
     queryFn: fetchMarcas,
+    staleTime: 1000 * 60 * 5,
   });
 
   const saveMutation = useMutation({
@@ -171,66 +134,76 @@ export default function Produtos() {
   }
 
   return (
-    <div className="flex flex-col h-full gap-6">
-      <PageHeader
-        title="Produtos"
-        subtitle="Gerencie o catálogo de produtos"
-        icon={Package}
-      >
-        <Button
-          onClick={handleNovoProduto}
-          className="text-base border-primary/30 text-muted-foreground hover:text-foreground hover:bg-gradient-to-r hover:from-purple-900/50 hover:to-slate-900/50 hover:border-purple-800/50 transform hover:-translate-y-1 transition-all duration-300 group"
-          variant="outline"
+    <div className="flex flex-col gap-6">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-6 space-y-6">
+        <PageHeader
+          title="Produtos"
+          subtitle="Gerencie o catálogo de produtos"
+          icon={Package}
         >
-          <Plus className="h-4 w-4 mr-2 transition-transform group-hover:rotate-90" />
-          Novo Produto
-        </Button>
-      </PageHeader>
+          <Button
+            onClick={handleNovoProduto}
+            className="text-base border-primary/30 text-muted-foreground hover:text-foreground hover:bg-gradient-to-r hover:from-purple-900/50 hover:to-slate-900/50 hover:border-purple-800/50 transform hover:-translate-y-1 transition-all duration-300 group"
+            variant="outline"
+          >
+            <Plus className="h-4 w-4 mr-2 transition-transform group-hover:rotate-90" />
+            Novo Produto
+          </Button>
+        </PageHeader>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="card-glass"><CardContent className="p-4"><div className="text-2xl font-bold text-primary">{produtos?.length || 0}</div><div className="text-sm text-muted-foreground">Total de Produtos</div></CardContent></Card>
-        <Card className="card-glass"><CardContent className="p-4"><div className="text-2xl font-bold text-green-400">{valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div><div className="text-sm text-muted-foreground">Valor Total em Estoque</div></CardContent></Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="card-glass"><CardContent className="p-4"><div className="text-2xl font-bold text-primary">{produtos?.length || 0}</div><div className="text-sm text-muted-foreground">Total de Produtos</div></CardContent></Card>
+          <Card className="card-glass"><CardContent className="p-4"><div className="text-2xl font-bold text-green-400">{valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div><div className="text-sm text-muted-foreground">Valor Total em Estoque</div></CardContent></Card>
+        </div>
       </div>
       
       <Card className="card-glass flex-grow flex flex-col">
         <CardContent className="p-0 flex-grow">
           <div className="overflow-y-auto h-full">
-            <Table className="table-fixed w-full">
-              <TableHeader>
-                <TableRow className="border-border/50 bg-muted/30">
-                  <TableHead>Produto</TableHead>
-                  <TableHead className="w-48">Marca</TableHead>
-                  <TableHead className="w-40 text-right">Valor</TableHead>
-                  <TableHead className="w-40 text-center">Condição</TableHead>
-                  <TableHead className="w-32 text-center">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {produtosFiltrados.map((produto) => {
-                  const condicao = getCondicaoProps(produto);
-                  return (
-                    <TableRow key={produto.id} className="hover:bg-accent/50">
-                      <TableCell className="font-medium truncate" title={produto.produto}>{produto.produto}</TableCell>
-                      <TableCell className="text-muted-foreground">{produto.marcas?.marca || 'N/A'}</TableCell>
-                      <TableCell className="text-primary font-semibold text-right">{(produto.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge className={cn("font-medium min-w-[10rem] justify-center", condicao.className)}>{condicao.text}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2 justify-center">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handleEditarProduto(produto)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleAbrirConfirmacaoExclusao(produto)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            {produtosFiltrados.length > 0 ? (
+              <Table className="table-fixed w-full">
+                <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
+                  <TableRow className="border-border/50 bg-muted/30">
+                    <TableHead>Produto</TableHead>
+                    <TableHead className="w-48">Marca</TableHead>
+                    <TableHead className="w-40 text-right">Valor</TableHead>
+                    <TableHead className="w-40 text-center">Condição</TableHead>
+                    <TableHead className="w-32 text-center">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {produtosFiltrados.map((produto) => {
+                    const condicao = getCondicaoProps(produto);
+                    return (
+                      <TableRow key={produto.id} className="hover:bg-accent/50">
+                        <TableCell className="font-medium truncate" title={produto.produto}>{produto.produto}</TableCell>
+                        <TableCell className="text-muted-foreground">{produto.marcas?.marca || 'N/A'}</TableCell>
+                        <TableCell className="text-primary font-semibold text-right">{(produto.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge className={cn("font-medium min-w-[10rem] justify-center", condicao.className)}>{condicao.text}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2 justify-center">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handleEditarProduto(produto)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleAbrirConfirmacaoExclusao(produto)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
+                <Package className="h-16 w-16 text-muted-foreground/50" />
+                <h3 className="text-xl font-semibold">Nenhum Produto Cadastrado</h3>
+                <p className="text-muted-foreground">Clique em "Novo Produto" para começar.</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

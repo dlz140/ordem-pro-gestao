@@ -1,24 +1,29 @@
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ClipboardList, AlertCircle, Calendar as CalendarIcon, CheckCircle, Plus, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { OrdemServicoDB, StatusOs } from "@/types";
+import { OrdemServicoDB, StatusOsInterface } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { DigitalClock } from "@/components/ui/DigitalClock";
 import { cn } from "@/lib/utils";
 
 type OrdemRecente = Pick<OrdemServicoDB, 'id' | 'valor_total' | 'data_os'> & {
   clientes: { nome: string } | null;
-  status_os: StatusOs | null;
+  status_os: StatusOsInterface | null;
   equipamentos: { tipo: string } | null;
 };
 
 interface KpisDoDia {
   abertasHoje: number;
   finalizadasHoje: number;
+}
+
+interface CapaData {
+  kpis: KpisDoDia;
+  ordensRecentes: OrdemRecente[];
 }
 
 const colorPalette = [
@@ -50,73 +55,32 @@ const getColorClasses = (colorName?: string | null) => {
     return `bg-transparent ${color.textColor} ${color.borderColor}`;
 };
 
+const fetchCapaData = async (): Promise<CapaData> => {
+  const { data, error } = await supabase.rpc('get_capa_data');
+  if (error) {
+    throw new Error('Não foi possível carregar os dados da página inicial.');
+  }
+  return data;
+};
+
 export default function Capa() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [ordensRecentes, setOrdensRecentes] = useState<OrdemRecente[]>([]);
-  const [kpis, setKpis] = useState<KpisDoDia>({ abertasHoje: 0, finalizadasHoje: 0 });
-  const [loading, setLoading] = useState(true);
+  const { data: capaData, isLoading, isError, error } = useQuery<CapaData, Error>({
+    queryKey: ['capaData'],
+    queryFn: fetchCapaData,
+    staleTime: 1000 * 60 * 5, // 5 minutos
+    onError: (err) => {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+  });
 
   const tarefasUrgentes = [
     { id: 1, tarefa: "Contatar cliente sobre peça chegada", prioridade: "Alta" },
     { id: 2, tarefa: "Finalizar diagnóstico do notebook", prioridade: "Média" },
     { id: 3, tarefa: "Agendar entrega para cliente", prioridade: "Alta" }
   ];
-
-  useEffect(() => {
-    fetchCapaData();
-  }, []);
-
-  const fetchCapaData = async () => {
-    setLoading(true);
-    try {
-      const hoje = new Date();
-      const inicioDoDia = new Date(hoje.setHours(0, 0, 0, 0)).toISOString();
-      const fimDoDia = new Date(hoje.setHours(23, 59, 59, 999)).toISOString();
-
-      const [ordensRecentesRes, kpisRes] = await Promise.all([
-        supabase
-          .from('ordens_servico')
-          .select('id, data_os, valor_total, clientes ( nome ), status_os ( status, cor ), equipamentos ( tipo )')
-          .order('data_os', { ascending: false })
-          .limit(3),
-        supabase
-          .from('ordens_servico')
-          .select('status_os ( status )')
-          .gte('created_at', inicioDoDia)
-          .lte('created_at', fimDoDia)
-      ]);
-      
-      if (ordensRecentesRes.error) throw ordensRecentesRes.error;
-      if (kpisRes.error) throw kpisRes.error;
-
-      setOrdensRecentes((ordensRecentesRes.data || []) as OrdemRecente[]);
-
-      const ordensDeHoje = kpisRes.data || [];
-      
-      const abertasHojeCount = ordensDeHoje.filter(o => {
-        const status = o.status_os?.status?.toLowerCase() || '';
-        return status.includes('abert');
-      }).length;
-
-      const finalizadasHojeCount = ordensDeHoje.filter(o => {
-        const status = o.status_os?.status?.toLowerCase() || '';
-        return status.includes('concluíd') || status.includes('finalizad');
-      }).length;
-
-      setKpis({
-        abertasHoje: abertasHojeCount,
-        finalizadasHoje: finalizadasHojeCount
-      });
-
-    } catch (error) {
-      console.error("Erro ao buscar dados da capa:", error);
-      toast({ title: "Erro", description: "Não foi possível carregar os dados da página inicial.", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getPrioridadeColor = (prioridade: string) => {
     switch (prioridade) {
@@ -126,9 +90,16 @@ export default function Capa() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return <div className="p-8">Carregando...</div>;
   }
+
+  if (isError) {
+    return <div className="p-8 text-destructive">Erro ao carregar dados: {error?.message}</div>;
+  }
+  
+  const kpis = capaData?.kpis;
+  const ordensRecentes = capaData?.ordensRecentes || [];
 
   return (
     <div className="flex flex-col h-full gap-4">
@@ -147,7 +118,7 @@ export default function Capa() {
           <CardContent className="p-4 flex items-center gap-4">
             <ClipboardList className="h-8 w-8 text-blue-400" />
             <div>
-              <div className="text-2xl font-bold">{kpis.abertasHoje}</div>
+              <div className="text-2xl font-bold">{kpis?.abertasHoje ?? 0}</div>
               <div className="text-xs text-muted-foreground">OS Abertas Hoje</div>
             </div>
           </CardContent>
@@ -156,7 +127,7 @@ export default function Capa() {
           <CardContent className="p-4 flex items-center gap-4">
             <CheckCircle className="h-8 w-8 text-green-400" />
             <div>
-              <div className="text-2xl font-bold">{kpis.finalizadasHoje}</div>
+              <div className="text-2xl font-bold">{kpis?.finalizadasHoje ?? 0}</div>
               <div className="text-xs text-muted-foreground">OS Finalizadas Hoje</div>
             </div>
           </CardContent>

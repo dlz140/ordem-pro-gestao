@@ -16,6 +16,7 @@ import {
   Settings,
   Wallet,
   Landmark,
+  TrendingUp,
 } from "lucide-react";
 import {
   Sidebar,
@@ -41,7 +42,6 @@ export function AppSidebar() {
   const [relatoriosOpen, setRelatoriosOpen] = useState(false);
 
   const handleLogout = () => {
-    console.log("Logout clicked");
   };
 
   const isActiveRoute = (path: string) => location.pathname === path;
@@ -129,7 +129,43 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-2">
-                    {/* Sub-itens de Relatórios aqui... */}
+                    <div className="ml-6 space-y-1">
+                      <SidebarMenuItem>
+                        <SidebarMenuButton asChild className={`text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300 rounded-lg border border-transparent hover:border-primary/20 hover:shadow-lg group h-10 ${isActiveRoute('/relatorios') ? 'bg-gradient-to-r from-primary/20 to-purple-500/20 border-primary/30 shadow-cyber' : ''}`}>
+                          <button onClick={() => navigate('/relatorios')} className="flex items-center gap-3 w-full text-left">
+                            <BarChart3 size={16} className="group-hover:text-primary transition-colors" />
+                            <span className="text-sm font-medium">Relatórios Gerais</span>
+                          </button>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                      
+                      <SidebarMenuItem>
+                        <SidebarMenuButton asChild className={`text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300 rounded-lg border border-transparent hover:border-primary/20 hover:shadow-lg group h-10 ${isActiveRoute('/relatorio-ir') ? 'bg-gradient-to-r from-primary/20 to-purple-500/20 border-primary/30 shadow-cyber' : ''}`}>
+                          <button onClick={() => navigate('/relatorio-ir')} className="flex items-center gap-3 w-full text-left">
+                            <FileText size={16} className="group-hover:text-primary transition-colors" />
+                            <span className="text-sm font-medium">Relatório IR</span>
+                          </button>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                      
+                      <SidebarMenuItem>
+                        <SidebarMenuButton asChild className={`text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300 rounded-lg border border-transparent hover:border-primary/20 hover:shadow-lg group h-10 ${isActiveRoute('/relatorio-vendas') ? 'bg-gradient-to-r from-primary/20 to-purple-500/20 border-primary/30 shadow-cyber' : ''}`}>
+                          <button onClick={() => navigate('/relatorio-vendas')} className="flex items-center gap-3 w-full text-left">
+                            <TrendingUp size={16} className="group-hover:text-primary transition-colors" />
+                            <span className="text-sm font-medium">Vendas por Período</span>
+                          </button>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                      
+                      <SidebarMenuItem>
+                        <SidebarMenuButton asChild className={`text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300 rounded-lg border border-transparent hover:border-primary/20 hover:shadow-lg group h-10 ${isActiveRoute('/relatorio-clientes') ? 'bg-gradient-to-r from-primary/20 to-purple-500/20 border-primary/30 shadow-cyber' : ''}`}>
+                          <button onClick={() => navigate('/relatorio-clientes')} className="flex items-center gap-3 w-full text-left">
+                            <Users size={16} className="group-hover:text-primary transition-colors" />
+                            <span className="text-sm font-medium">Relatório Clientes</span>
+                          </button>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    </div>
                   </CollapsibleContent>
                 </Collapsible>
               </SidebarMenuItem>

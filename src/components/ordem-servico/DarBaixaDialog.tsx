@@ -6,8 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { OrdemServicoDB, StatusOs } from "@/types";
-import { CurrencyInput } from "@/components/ui/CurrencyInput";
-import { DatePicker } from "@/components/ui/DatePicker";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Card, CardContent } from "@/components/ui/card";
 import { DollarSign, Save } from "lucide-react";
 
@@ -32,7 +32,7 @@ export function DarBaixaDialog({ isOpen, onClose, onSuccess, ordem }: DarBaixaDi
   }, [valorPago, dataPagamento]);
 
   const fetchStatus = useCallback(async () => {
-    const { data } = await supabase.from('status_os').select('id, status');
+    const { data } = await supabase.from('status_sistema').select('id, status');
     if (data) setStatusDisponiveis(data);
   }, []);
 
@@ -94,9 +94,9 @@ export function DarBaixaDialog({ isOpen, onClose, onSuccess, ordem }: DarBaixaDi
         toast({ title: "Sucesso!", description: "Pagamento registrado com sucesso." });
         onSuccess();
 
-    } catch(error: any) {
-        console.error("Erro ao dar baixa na OS:", error);
-        toast({ title: "Erro", description: error.message || "Não foi possível registrar o pagamento.", variant: "destructive"});
+    } catch(error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "Não foi possível registrar o pagamento.";
+        toast({ title: "Erro", description: errorMessage, variant: "destructive"});
     } finally {
         setSaving(false);
     }

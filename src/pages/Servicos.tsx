@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
@@ -10,40 +9,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Settings, Plus, Search, Edit, Trash2, Save } from "lucide-react";
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
-import { CurrencyInput } from "@/components/ui/CurrencyInput";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Servico } from "@/types";
 import { PageHeader } from "@/components/ui/PageHeader";
-
-const fetchServicos = async (): Promise<Servico[]> => {
-  const { data, error } = await supabase
-    .from('servicos')
-    .select('id, servico, valor')
-    .order('servico', { ascending: true });
-  if (error) throw new Error(error.message);
-  return data || [];
-};
-
-const saveServico = async (servicoData: Partial<Servico>): Promise<Servico> => {
-  const { id, ...updateData } = servicoData;
-  const dadosParaBanco = {
-    servico: updateData.servico,
-    valor: updateData.valor || null,
-  };
-
-  let response;
-  if (id) {
-    response = await supabase.from('servicos').update(dadosParaBanco).eq('id', id).select().single();
-  } else {
-    response = await supabase.from('servicos').insert(dadosParaBanco).select().single();
-  }
-  if (response.error) throw new Error(response.error.message);
-  return response.data;
-};
-
-const deleteServico = async (id: string): Promise<void> => {
-  const { error } = await supabase.from('servicos').delete().eq('id', id);
-  if (error) throw new Error(error.message);
-};
+import { fetchServicos, saveServico, deleteServico } from "@/services/servicoService";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export default function Servicos() {
   const { toast } = useToast();
@@ -53,10 +23,12 @@ export default function Servicos() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [servicoSelecionado, setServicoSelecionado] = useState<Servico | null>(null);
   const [novoServico, setNovoServico] = useState<Partial<Servico>>({});
-  const [busca, setBusca] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [servicoParaExcluir, setServicoParaExcluir] = useState<Servico | null>(null);
   
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
   const isFormValid = useMemo(() => {
     return !!novoServico.servico && novoServico.servico.trim() !== '';
   }, [novoServico.servico]);
@@ -64,6 +36,7 @@ export default function Servicos() {
   const { data: servicos, isLoading, isError, error } = useQuery<Servico[]>({
     queryKey: ['servicos'],
     queryFn: fetchServicos,
+    staleTime: 1000 * 60 * 5,
   });
 
   const saveMutation = useMutation({
@@ -83,9 +56,11 @@ export default function Servicos() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['servicos'] });
       toast({ title: "Sucesso!", description: "Serviço removido com sucesso." });
+      setIsConfirmOpen(false);
     },
     onError: (error) => {
       toast({ title: "Erro ao remover", description: error.message, variant: "destructive" });
+      setIsConfirmOpen(false);
     },
   });
 
@@ -128,83 +103,99 @@ export default function Servicos() {
 
   const servicosFiltrados = useMemo(() =>
     (servicos || []).filter(servico =>
-      busca.trim() === "" || servico.servico.toLowerCase().includes(busca.toLowerCase())
-    ), [servicos, busca]);
+      debouncedSearchTerm.trim().toLowerCase() === "" || servico.servico.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    ), [servicos, debouncedSearchTerm]);
 
   if (isLoading) return <div className="p-8">Carregando serviços...</div>;
   if (isError) return <div className="p-8 text-red-500">Erro ao carregar dados: {error.message}</div>;
 
   return (
-    <div className="flex flex-col h-full gap-6">
-      <PageHeader
-        title="Serviços"
-        subtitle="Gerencie o catálogo de serviços"
-        icon={Settings}
-      >
-        <Button 
-          onClick={handleNovoServico}
-          className="text-base border-primary/30 text-muted-foreground hover:text-foreground hover:bg-gradient-to-r hover:from-purple-900/50 hover:to-slate-900/50 hover:border-purple-800/50 transform hover:-translate-y-1 transition-all duration-300 group"
-          variant="outline"
+    <div className="flex flex-col gap-6">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-6 space-y-6">
+        <PageHeader
+          title="Serviços"
+          subtitle="Gerencie o catálogo de serviços"
+          icon={Settings}
         >
-          <Plus className="h-4 w-4 mr-2 transition-transform group-hover:rotate-90" />
-          Novo Serviço
-        </Button>
-      </PageHeader>
+          <Button 
+            onClick={handleNovoServico}
+            className="text-base border-primary/30 text-muted-foreground hover:text-foreground hover:bg-gradient-to-r hover:from-purple-900/50 hover:to-slate-900/50 hover:border-purple-800/50 transform hover:-translate-y-1 transition-all duration-300 group"
+            variant="outline"
+          >
+            <Plus className="h-4 w-4 mr-2 transition-transform group-hover:rotate-90" />
+            Novo Serviço
+          </Button>
+        </PageHeader>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="md:col-span-1 card-glass">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <div className="text-2xl font-bold text-primary">{servicos?.length || 0}</div>
-              <div className="text-sm text-muted-foreground">Total de Serviços</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="md:col-span-2 card-glass">
-          <CardContent className="p-4 flex items-center">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Buscar serviços..."
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="md:col-span-1 card-glass">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <div className="text-2xl font-bold text-primary">{servicos?.length || 0}</div>
+                <div className="text-sm text-muted-foreground">Total de Serviços</div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="md:col-span-2 card-glass">
+            <CardContent className="p-4 flex items-center">
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Buscar serviços..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <Card className="card-glass flex-grow flex flex-col">
         <CardContent className="p-0 flex-grow">
           <div className="overflow-y-auto h-full">
             <Table>
-              <TableHeader>
-                <TableRow className="border-border/50 bg-muted/30">
+              <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
+                <TableRow className="border-border/50">
                   <TableHead>Serviço</TableHead>
                   <TableHead className="w-40 text-right">Valor</TableHead>
                   <TableHead className="w-32 text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {servicosFiltrados.map((servico) => (
-                  <TableRow key={servico.id} className="hover:bg-accent/50">
-                    <TableCell className="font-medium">{servico.servico}</TableCell>
-                    <TableCell className="text-primary text-right">
-                      {(servico.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2 justify-center">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handleEditarServico(servico)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleAbrirConfirmacaoExclusao(servico)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                {servicosFiltrados.length > 0 ? (
+                  servicosFiltrados.map((servico) => (
+                    <TableRow key={servico.id} className="hover:bg-accent/50">
+                      <TableCell className="font-medium">{servico.servico}</TableCell>
+                      <TableCell className="text-primary text-right">
+                        {(servico.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2 justify-center">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handleEditarServico(servico)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleAbrirConfirmacaoExclusao(servico)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="py-24 text-center">
+                      <div className="flex flex-col items-center justify-center gap-4">
+                        <Settings className="h-16 w-16 text-muted-foreground/50" />
+                        <h3 className="text-xl font-semibold">Nenhum Serviço Encontrado</h3>
+                        <p className="text-muted-foreground">
+                          {searchTerm ? "Nenhum serviço encontrado para sua busca." : "Clique em 'Novo Serviço' para começar."}
+                        </p>
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>
@@ -247,7 +238,7 @@ export default function Servicos() {
             </fieldset>
           </div>
           <DialogFooter className="p-4 border-t border-border/50 bg-muted/50 flex justify-end gap-x-4">
-            <Button variant="outline" onClick={resetDialog} className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 transition-colors duration-300">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 transition-colors duration-300">
               Cancelar
             </Button>
             <Button onClick={handleSalvarServico} disabled={!isFormValid || saveMutation.isPending} className="bg-gradient-to-r from-purple-700 to-purple-900 text-white transform hover:-translate-y-1 transition-all duration-300 font-semibold rounded-lg flex items-center gap-2 px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed">

@@ -16,19 +16,19 @@ import {
 
 interface DatePickerProps {
   date: Date | undefined;
-  onSelect: (date: Date | undefined) => void;
+  setDate: (date: Date | undefined) => void;
   className?: string;
   disabled?: boolean;
 }
 
-export function DatePicker({ date, onSelect, className, disabled }: DatePickerProps) {
+export function DatePicker({ date, setDate, className, disabled }: DatePickerProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button
           variant={"outline"}
           className={cn(
-            "w-full justify-start text-left font-normal",
+            "w-full justify-start text-left font-normal border-2 border-border bg-background hover:border-primary/50 transition-all duration-200 shadow-sm hover:shadow-md focus-visible:shadow-lg focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:border-primary",
             !date && "text-muted-foreground",
             className
           )}
@@ -42,7 +42,7 @@ export function DatePicker({ date, onSelect, className, disabled }: DatePickerPr
         <Calendar
           mode="single"
           selected={date}
-          onSelect={onSelect}
+          onSelect={setDate}
           initialFocus
           locale={ptBR} // Aplica a tradução para o calendário
         />

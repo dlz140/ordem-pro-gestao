@@ -1,21 +1,27 @@
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Filter, RotateCcw } from "lucide-react";
+import { FileText, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-<<<<<<< HEAD
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-=======
 import { PageHeader } from "@/components/ui/PageHeader";
->>>>>>> 544b8c8 (mensagem do commit)
 
 interface RelatorioIRData {
   totalAnual: number;
   detalhamentoMensal: { mes: string; total: number }[];
 }
+
+// A função que chama o Supabase agora é isolada e mais limpa
+const gerarRelatorioIR = async (ano: number): Promise<RelatorioIRData> => {
+  const { data, error } = await supabase.rpc('get_relatorio_ir', { ano_selecionado: ano });
+  if (error) {
+    throw new Error("Não foi possível gerar o relatório. Verifique o console para mais detalhes.");
+  }
+  return data;
+};
 
 export default function RelatorioIR() {
   const { toast } = useToast();
@@ -23,52 +29,21 @@ export default function RelatorioIR() {
   const years = Array.from({ length: 10 }, (_, i) => currentYear - i);
   
   const [anoSelecionado, setAnoSelecionado] = useState<number>(currentYear);
-  const [loading, setLoading] = useState(false);
-  const [relatorio, setRelatorio] = useState<RelatorioIRData | null>(null);
 
-  const handleGerarRelatorio = async () => {
-    setLoading(true);
-    setRelatorio(null);
-    try {
-      const { data, error } = await supabase
-        .from('ordens_servico')
-        .select('data_os, valor_total, status_os!inner(status)')
-        .gte('data_os', `${anoSelecionado}-01-01T00:00:00`)
-        .lte('data_os', `${anoSelecionado}-12-31T23:59:59`);
+  // useMutation para gerenciar o estado da chamada da API
+  const { mutate, data: relatorio, isPending: loading, reset } = useMutation({
+    mutationFn: gerarRelatorioIR,
+    onSuccess: () => {
+      toast({ title: "Sucesso!", description: `Relatório para ${anoSelecionado} gerado com sucesso.` });
+    },
+    onError: (error) => {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    },
+  });
 
-      if (error) throw error;
-
-      if (data) {
-        const osFinalizadas = data.filter(os => 
-            os.status_os?.status.toLowerCase().includes('finalizad') || 
-            os.status_os?.status.toLowerCase().includes('concluíd')
-        );
-
-        const meses = Array.from({ length: 12 }, () => ({ total: 0 }));
-
-        for (const os of osFinalizadas) {
-          const mesIndex = new Date(os.data_os).getMonth();
-          meses[mesIndex].total += (os.valor_total || 0);
-        }
-
-        const totalAnual = meses.reduce((acc, mes) => acc + mes.total, 0);
-
-        setRelatorio({
-          totalAnual,
-          detalhamentoMensal: meses.map((dados, index) => ({
-            mes: new Date(anoSelecionado, index).toLocaleString('pt-BR', { month: 'long' }),
-            ...dados,
-          })),
-        });
-
-        toast({ title: "Sucesso!", description: `Relatório para ${anoSelecionado} gerado com sucesso.` });
-      }
-    } catch (error) {
-      console.error('Erro ao gerar relatório:', error);
-      toast({ title: "Erro", description: "Não foi possível gerar o relatório.", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
+  const handleGerarRelatorio = () => {
+    reset(); // Limpa dados de relatórios anteriores
+    mutate(anoSelecionado);
   };
 
   return (

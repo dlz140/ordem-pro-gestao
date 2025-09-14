@@ -40,11 +40,17 @@ export function ConfirmationDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel asChild>
-            <Button variant="ghost">{cancelText}</Button>
+            <Button
+              variant="default"
+              onClick={onClose}
+              className="bg-muted text-muted-foreground hover:bg-muted/80"
+            >
+              {cancelText}
+            </Button>
           </AlertDialogCancel>
           <AlertDialogAction asChild>
             <Button
-              variant="destructive"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
                 onConfirm();
                 onClose();

@@ -1,0 +1,87 @@
+{
+  "name": "react-supabase-rules",
+  "description": "Regras de estilo, arquitetura e melhorias para o projeto React + Vite + Supabase",
+  "rules": [
+    {
+      "category": "Code Style and Structure",
+      "content": [
+        "Escreva código conciso, legível e em TypeScript.",
+        "Use programação funcional e declarativa; evite classes.",
+        "Prefira modularização para seguir DRY e evitar duplicações.",
+        "Nomes de variáveis devem ser descritivos e usar verbos auxiliares (isLoading, hasError).",
+        "Cada arquivo deve conter apenas conteúdo relacionado: componentes, hooks, helpers ou tipos.",
+        "Prefira named exports para funções e hooks."
+      ]
+    },
+    {
+      "category": "Naming Conventions",
+      "content": [
+        "Use lowercase-com-hifen para diretórios (ex: components/order-card).",
+        "Use PascalCase para componentes React.",
+        "Use camelCase para funções, hooks e variáveis."
+      ]
+    },
+    {
+      "category": "TypeScript Usage",
+      "content": [
+        "Use interfaces no lugar de types para melhor extensibilidade.",
+        "Evite enums; prefira maps ou objetos imutáveis.",
+        "Crie componentes funcionais com React.FC e interfaces para props.",
+        "Habilite strict mode no tsconfig.json."
+      ]
+    },
+    {
+      "category": "Syntax and Formatting",
+      "content": [
+        "Sempre use arrow functions para componentes e callbacks.",
+        "Prefira `function` apenas para funções puras utilitárias (benefício de hoisting).",
+        "Use React Hooks corretamente: custom hooks devem começar com `use`.",
+        "Mantenha a sintaxe moderna de ESNext (async/await, optional chaining, nullish coalescing)."
+      ]
+    },
+    {
+      "category": "UI and Styling",
+      "content": [
+        "Use shadcn/ui como biblioteca base de UI.",
+        "Estilização com Tailwind CSS, mobile-first e responsivo.",
+        "Respeitar o padrão dark/futurista do layout atual.",
+        "Componentes de formulário devem usar Input, Button, Dialog, etc. do shadcn/ui."
+      ]
+    },
+    {
+      "category": "Performance Optimization",
+      "content": [
+        "Use React Query (@tanstack/react-query) para requisições e cache.",
+        "Prefira `React.lazy` e `Suspense` para code splitting.",
+        "Carregue dinamicamente componentes não-críticos.",
+        "Imagens devem estar em WebP, com lazy loading e atributos width/height definidos.",
+        "Mantenha consultas pesadas no Supabase (funções no banco) e não no front."
+      ]
+    },
+    {
+      "category": "Architecture",
+      "content": [
+        "Toda comunicação com o Supabase deve ficar centralizada em `src/services`.",
+        "Utilizar a CLI do Supabase para gerar tipos TypeScript automaticamente.",
+        "Mover lógica duplicada (ex: paleta de cores dos status) para `src/lib/utils.ts`.",
+        "Unificar sistema de notificações para Sonner (remover redundâncias)."
+      ]
+    },
+    {
+      "category": "Accessibility",
+      "content": [
+        "Corrigir Dialogs: usar <DialogHeader>, <DialogTitle> e <DialogDescription>.",
+        "Usar <Link> do react-router-dom em vez de <a> para navegação interna."
+      ]
+    },
+    {
+      "category": "Improvements (Priorities)",
+      "content": [
+        "Prioridade 1: Corrigir acessibilidade dos Dialogs; substituir <a> por <Link>; adicionar campo de busca em Produtos; reduzir TOAST_REMOVE_DELAY para 1000ms.",
+        "Prioridade 2: Padronizar tema com next-themes; unificar sistema de notificações; mover cálculos pesados para o Supabase; implementar geração automática de tipos; aplicar code splitting com React.lazy.",
+        "Prioridade 3: Melhorar CurrencyInput; mover filtros para servidor; centralizar paleta de cores; adicionar colunas boolean no status_os.",
+        "Prioridade 4: Adicionar React.StrictMode; refatorar useIsMobile com useSyncExternalStore; limpar ConfirmationDialog."
+      ]
+    }
+  ]
+}

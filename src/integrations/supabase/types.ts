@@ -59,6 +59,73 @@ export type Database = {
         }
         Relationships: []
       }
+      ordem_itens: {
+        Row: {
+          id: string
+          ordem_id: string
+          tipo_item: 'PRODUTO' | 'SERVICO'
+          descricao: string
+          quantidade: number
+          valor_unitario: number
+          desconto: number
+          valor_total: number
+          produto_id: string | null
+          servico_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          ordem_id: string
+          tipo_item: 'PRODUTO' | 'SERVICO'
+          descricao: string
+          quantidade?: number
+          valor_unitario: number
+          desconto?: number
+          valor_total?: number
+          produto_id?: string | null
+          servico_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          ordem_id?: string
+          tipo_item?: 'PRODUTO' | 'SERVICO'
+          descricao?: string
+          quantidade?: number
+          valor_unitario?: number
+          desconto?: number
+          valor_total?: number
+          produto_id?: string | null
+          servico_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordem_itens_ordem_id_fkey"
+            columns: ["ordem_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_servico"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordem_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordem_itens_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       marcas: {
         Row: {
           created_at: string
@@ -256,7 +323,48 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_relatorio_clientes: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          cliente_id: string
+          nome_cliente: string
+          telefone: string
+          total_ordens: number
+          valor_total_gasto: number
+          valor_total_pago: number
+          valor_total_restante: number
+          ultima_ordem: string
+        }[]
+      }
+      salvar_os_com_itens: {
+        Args: {
+          p_ordem: {
+            nome_cliente: string
+            telefone: string
+            equipamento: string
+            marca?: string
+            modelo?: string
+            defeito?: string
+            observacoes?: string
+            status_os?: string
+            forma_pagamento?: string
+            data_entrega?: string
+          }
+          p_itens: {
+            tipo_item: 'PRODUTO' | 'SERVICO'
+            descricao: string
+            quantidade: number
+            valor_unitario: number
+            desconto?: number
+            produto_id?: string
+            servico_id?: string
+          }[]
+        }
+        Returns: {
+          id: string
+          valor_total: number
+        }
+      }
     }
     Enums: {
       [_ in never]: never
